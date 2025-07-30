@@ -5,14 +5,15 @@ import { ExpressAdapter } from '@nestjs/platform-express';
 import express from 'express';
 import { VercelRequest, VercelResponse } from '@vercel/node';
 
-const server = express();
 let app: any;
 
-async function createNestServer(expressInstance: express.Express) {
+async function createNestApp() {
   if (!app) {
+    const server = express();
+    
     app = await NestFactory.create(
       AppModule,
-      new ExpressAdapter(expressInstance),
+      new ExpressAdapter(server),
     );
 
     // Enable CORS
@@ -33,6 +34,7 @@ async function createNestServer(expressInstance: express.Express) {
 }
 
 export default async (req: VercelRequest, res: VercelResponse) => {
-  await createNestServer(server);
-  server(req as any, res as any);
+  const nestApp = await createNestApp();
+  const expressApp = nestApp.getHttpAdapter().getInstance();
+  return expressApp(req, res);
 };
